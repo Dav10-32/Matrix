@@ -1,5 +1,4 @@
 public class Agent implements Runnable {
-
     private int x, y;
     private Game game;
 
@@ -11,20 +10,22 @@ public class Agent implements Runnable {
 
     @Override
     public void run() {
-        while (!game.isNioEscape() && !game.isCaughtNio()) {
-            synchronized (game.getLock()) {
-                while (game.isTurnoNio()) {
-                    try { game.getLock().wait(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-                }
+        try {
+            while (!game.isNioEscape() && !game.isCaughtNio()) {
+                synchronized (game.getLock()) {
+                    while (game.isTurnoNio()) {
+                        game.getLock().wait();
+                    }
 
-                mover();
-                System.out.println("Agente se movió a (" + x + "," + y + ")");
-                if (x == game.getNio().getX() && y == game.getNio().getY()) {
-                    game.setCaughtNio();
+                    mover();
+                    System.out.println("Agente se movió a (" + x + "," + y + ")");
+                    game.agenteMovido();
+
+                    game.getLock().wait();
                 }
             }
-
-            try { Thread.sleep(200); } catch (InterruptedException ignored) {}
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -34,17 +35,33 @@ public class Agent implements Runnable {
         int nx = x;
         int ny = y;
 
-        if (nio.getX() > x) nx++;
-        else if (nio.getX() < x) nx--;
+        if (nio.getX() > x) {
+            nx++;
+        } else if (nio.getX() < x) {
+            nx--;
+        }
 
-        if (nio.getY() > y) ny++;
-        else if (nio.getY() < y) ny--;
+        if (nio.getY() > y) {
+            ny++;
+        } else if (nio.getY() < y) {
+            ny--;
+        }
+
+        if (nx < 0) nx = 0;
+        if (nx >= Game.SIZE) nx = Game.SIZE - 1;
+        if (ny < 0) ny = 0;
+        if (ny >= Game.SIZE) ny = Game.SIZE - 1;
 
         game.updatePosition(x, y, nx, ny, 'A');
         x = nx;
         y = ny;
     }
 
-    public int getX() { return x; }
-    public int getY() { return y; }
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
 }
